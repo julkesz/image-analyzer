@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="en"
+      layout:decorate="layouts/defaultLayout"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      xmlns:th="http://www.thymeleaf.org">
+<head>
+    <title>Main Wall</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+        }
+
+        #header {
+            background-color: #3b5998;
+            color: #fff;
+            padding: 10px;
+            text-align: center;
+        }
+
+        #main-wall {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: space-around;
+            margin: 20px;
+        }
+
+        .photo {
+            width: 1200px;
+            margin: 10px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+            transition: transform 0.2s;
+        }
+
+        .photo:hover {
+            transform: scale(1.05);
+        }
+
+        .photo img {
+            width: 100%;
+            height: auto;
+        }
+    </style>
+</head>
+
+<body>
+<div id="header">
+    <h1>Main Wall</h1>
+</div>
+
+<div id="main-wall">
+
+    <div class="container my-5" layout:fragment="content">
+        <div class="row">
+            <div class="col-md-6 offset-md-3">
+                <h2 class="text-center mb-4" th:if="${tags != null and tags != ''}">Searched by: <span
+                        th:text="${tags}"></span></h2>
+            </div>
+        </div>
+        <div class="row">
+            <div class="col-md-6 offset-md-3">
+                <h2 class="text-center mb-4" th:if="${searchedByMail != null and searchedByMail != ''}">Photos of: <span
+                        th:text="${searchedByMail}"></span></h2>
+            </div>
+        </div>
+        <div class="row">
+            <div class="col-md-6 offset-md-3">
+                <h2 class="text-center mb-4" th:if="${myAccount != null and myAccount != ''}">Hello <span
+                        th:text="${myAccount}"></span></h2>
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="col-md-6 offset-md-3" th:each="photo : ${photos}">
+                <div class="card mb-4 shadow-sm">
+                    <!-- user info and dropdown menu -->
+                    <div class="card-header d-flex justify-content-between align-items-start">
+                        <div>
+                            <h5 class="mb-1" th:text="${photo.getName()}"></h5>
+                            <span class="text-muted">
+                                <i class="fas fa-user"></i>
+                                <a th:href="@{'/photos/' + ${photo.getUserEmail()}}" th:text="${photo.getUserEmail()}"></a>
+                            </span>
+                        </div>
+                        <div class="dropdown no-arrow" th:if="${photo.getUserEmail() == email}">
+                            <a class="dropdown-toggle" href="#" role="button" id="dropdownMenuLink"
+                               data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                                <i class="fas fa-ellipsis-v fa-sm fa-fw text-gray-400"></i>
+                            </a>
+                            <div class="dropdown-menu dropdown-menu-right shadow animated--fade-in"
+                                 aria-labelledby="dropdownMenuLink">
+                                <a class="dropdown-item" th:href="@{'/update/' + ${photo.getId()}}" href="#">Edit</a>
+                                <a class="dropdown-item" th:href="@{'/delete/' + ${photo.getId()}}" href="#">Remove</a>
+                            </div>
+                        </div>
+                    </div>
+                    <img class="card-img-top" th:src="@{${photo.getUrl()}}" alt="Image">
+                    <div class="card-body">
+                        <p class="card-text" th:text="${photo.getDescription()}"></p>
+                    </div>
+                    <!-- tags section -->
+                    <div class="card-footer mt-auto">
+                        <small class="text-muted">Tags: </small>
+                        <a th:each="tag : ${photo.tags}"
+                           class="badge badge-primary mr-2"
+                           th:href="@{'/search/' + ${tag.name}}"
+                           th:text="${tag.name}">
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+</div>
+</body>
+</html>

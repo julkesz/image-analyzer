@@ -1,0 +1,196 @@
+services:
+  postgres:
+    container_name: postgres
+    image: postgres
+    environment:
+      POSTGRES_DB: mpio
+      POSTGRES_USER: mpio
+      POSTGRES_PASSWORD: password
+      PGDATA: /data/mpio
+    volumes:
+      - postgres:/data/mpio
+    ports:
+      - "5432:5432"
+    networks:
+      - postgres-network
+    restart: unless-stopped
+  pgadmin:
+    container_name: pgadmin
+    image: dpage/pgadmin4
+    environment:
+      PGADMIN_DEFAULT_EMAIL: ${PGADMIN_DEFAULT_EMAIL:-pgadmin4@pgadmin.org}
+      PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_DEFAULT_PASSWORD:-admin}
+      PGADMIN_CONFIG_SERVER_MODE: 'False'
+    volumes:
+      - pgadmin:/var/lib/pgadmin
+    ports:
+      - "5050:80"
+    networks:
+      - postgres-network
+    restart: unless-stopped
+  webapp:
+    container_name: webapp
+    build:
+      context: webapp
+      dockerfile: Dockerfile
+    image: webapp
+    ports:
+      - "8081:8081"
+    restart: unless-stopped
+#  authentication:
+#    container_name: authentication
+#    build:
+#      context: authentication
+#      dockerfile: Dockerfile
+#    image: authentication:latest
+#    ports:
+#      - "8080:8080"
+#    restart: unless-stopped
+  data-service:
+    container_name: data-service
+    build:
+      context: data-service
+      dockerfile: Dockerfile
+    image: data-service:latest
+    ports:
+      - "8083:8083"
+    restart: unless-stopped
+    depends_on:
+      - kafka
+    environment:
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://34.134.181.2:5432/mpio
+      - SPRING_DATASOURCE_USERNAME=postgres
+      - SPRING_DATASOURCE_PASSWORD=password
+      - SPRING_JPA_HIBERNATE_DDL_AUTO=create
+      - SPRING_JPA_PROPERTIES_HIBERNATE_DIALECT=org.hibernate.dialect.PostgreSQLDialect
+      - SPRING_KAFKA_BOOTSTRAP-SERVERS=kafka:9092
+    networks:
+      - kafka-network
+
+  image-analyzer:
+    container_name: image-analyzer
+    build:
+      context: image-analyzer
+      dockerfile: Dockerfile
+    image: image-analyzer:latest
+    ports:
+      - "8082:8082"
+    restart: unless-stopped
+    environment:
+      - SPRING_KAFKA_BOOTSTRAP-SERVERS=kafka:9092
+      - GOOGLE_APPLICATION_CREDENTIALS=./silken-forest-388009-9d4d8198cba5.json
+    networks:
+      - kafka-network
+
+  zookeeper: #potrzebne do kafki
+    image: bitnami/zookeeper:3.8.1
+    container_name: zookeeper
+    ports:
+      - "2181:2181"
+    environment:
+      - ALLOW_ANONYMOUS_LOGIN=yes
+    networks:
+      - kafka-network
+
+  kafka:
+    image: bitnami/kafka:3.4
+    container_name: kafka
+    depends_on:
+      - zookeeper
+    ports:
+      - "9092:9092"
+    environment:
+      - ALLOW_PLAINTEXT_LISTENER=yes
+    networks:
+      - kafka-network
+
+networks:
+  postgres-network:
+    driver: bridge
+  kafka-network:
+
+volumes:
+  postgres:
+  pgadmin:
+
+
+#  zipkin:
+#    image: openzipkin/zipkin
+#    container_name: zipkin
+#    ports:
+#      - "9411:9411"
+#    networks:
+#      - spring
+#  rabbitmq:
+#    image: rabbitmq:3.9.11-management-alpine
+#    container_name: rabbitmq
+#    ports:
+#      - "5672:5672"
+#      - "15672:15672"
+#    networks:
+#      - spring
+#  eureka-server:
+#    image: amigoscode/eureka-server:latest
+#    container_name: eureka-server
+#    ports:
+#      - "8761:8761"
+#    environment:
+#      - SPRING_PROFILES_ACTIVE=docker
+#    networks:
+#      - spring
+#    depends_on:
+#      - zipkin
+#  apigw:
+#    image: amigoscode/apigw:latest
+#    container_name: apigw
+#    ports:
+#      - "8083:8083"
+#    environment:
+#      - SPRING_PROFILES_ACTIVE=docker
+#    networks:
+#      - spring
+#    depends_on:
+#      - zipkin
+#      - eureka-server
+#  customer:
+#    image: amigoscode/customer:latest
+#    container_name: customer
+#    ports:
+#      - "8080:8080"
+#    environment:
+#      - SPRING_PROFILES_ACTIVE=docker
+#    networks:
+#      - spring
+#      - postgres
+#    depends_on:
+#      - zipkin
+#      - postgres
+#      - rabbitmq
+#  fraud:
+#    image: amigoscode/fraud:latest
+#    container_name: fraud
+#    ports:
+#      - "8081:8081"
+#    environment:
+#      - SPRING_PROFILES_ACTIVE=docker
+#    networks:
+#      - spring
+#      - postgres
+#    depends_on:
+#      - zipkin
+#      - postgres
+#      - rabbitmq
+#  notification:
+#    image: amigoscode/notification:latest
+#    container_name: notification
+#    ports:
+#      - "8082:8082"
+#    environment:
+#      - SPRING_PROFILES_ACTIVE=docker
+#    networks:
+#      - spring
+#      - postgres
+#    depends_on:
+#      - zipkin
+#      - postgres
+#      - rabbitmq
